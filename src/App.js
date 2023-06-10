@@ -1,7 +1,10 @@
 import {Navigate} from "react-router";
+import Cookies from "universal-cookie";
 
 function App() {
-    if (global.isLogin){
+    const cookies = new Cookies()
+
+    if (cookies.get("isLogin")){
         return <Navigate to="/main" replace />
     } else {
         return <Navigate to="/login" replace />

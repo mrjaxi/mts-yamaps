@@ -7,19 +7,15 @@ import {BrowserRouter, Route, Routes} from "react-router-dom";
 import LoginForm from "./LoginForm";
 import MainMap from "./MainMap";
 
-global.isLogin = false
-global.devId = undefined
-global.devToken = undefined
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <MantineProvider>
-      <BrowserRouter>
-          <Routes>
-              <Route path="/" element={<App />} />
-              <Route path="/login" element={<LoginForm />} />
-              <Route path="/main" element={<MainMap />} />
-          </Routes>
-      </BrowserRouter>
-  </MantineProvider>
+    <MantineProvider>
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<App />} />
+                <Route path="/login" element={<LoginForm />} />
+                <Route path="/main" element={<MainMap />} />
+            </Routes>
+        </BrowserRouter>
+    </MantineProvider>
 );

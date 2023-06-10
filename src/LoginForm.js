@@ -4,15 +4,19 @@ import {Button, Container, em, Flex, PasswordInput, Space, Text, TextInput, Titl
 import axios from "axios";
 import AuthRoutes from "./AuthRoutes";
 import {useNavigate} from "react-router";
+import Cookies from "universal-cookie";
 
 const LoginForm = () => {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [error, setError] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+
     const navigate = useNavigate()
+    const cookies = new Cookies()
 
     const auth = async () => {
-        console.log(email, password)
+        setIsLoading(true)
         let tokenDevice= await axios.post(AuthRoutes.URL + AuthRoutes.AUTH_PATH,
             {
                 username: email,
@@ -28,13 +32,11 @@ const LoginForm = () => {
                 }
             }
         ).then(r => r.data.data[0].id.id).catch(err => setError(true))
-
-        console.log(idDevice, tokenDevice)
-
+        setIsLoading(false)
         if (!error && tokenDevice && idDevice) {
-            global.devToken = tokenDevice
-            global.devId = idDevice
-            global.isLogin = true
+            cookies.set("devToken", tokenDevice)
+            cookies.set("devId", idDevice)
+            cookies.set("isLogin", true)
 
             navigate("/main", { replace: true })
         }
@@ -94,7 +96,7 @@ const LoginForm = () => {
                     onChange={(pass) => setPassword(pass.target.value)}
                 />
                 <Space h="xl"/>
-                <Button onClick={() => email && auth().then()} color="indigo" radius="md">
+                <Button onClick={() => email && password && auth().then()} color="indigo" radius="md" loading={isLoading}>
                     Войти
                 </Button>
                 </Flex>

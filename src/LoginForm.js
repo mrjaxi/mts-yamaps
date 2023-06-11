@@ -45,10 +45,6 @@ const LoginForm = () => {
         }
     }
 
-    useEffect(() => {
-        let date = new Date()
-        console.log()
-    }, []);
 
     if (cookies.get("devToken") && cookies.get("devId")) {
         return <Navigate to="/main" replace />

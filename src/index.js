@@ -1,15 +1,17 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
+import './styles/index.css';
 import App from './App';
 import {MantineProvider} from '@mantine/core';
 import {BrowserRouter, Route, Routes} from "react-router-dom";
 import LoginForm from "./LoginForm";
 import MainMap from "./MainMap";
+import {Notifications} from "@mantine/notifications";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
     <MantineProvider>
+        <Notifications position="top-right"/>
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<App />} />

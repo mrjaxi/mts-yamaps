@@ -1,26 +1,26 @@
-import React, {useLayoutEffect, useState} from 'react';
-import './App.css';
+import React, {useEffect, useRef, useState} from 'react';
+import './styles/App.css';
 import axios from "axios";
 import AuthRoutes from "./AuthRoutes";
 import {Circle, Map, Placemark, YMaps} from "@pbe/react-yandex-maps";
-import {Button, Container, Flex, Loader, NumberInput, Space, Text} from "@mantine/core";
+import {Button, Container, Flex, NumberInput, Space, Text} from "@mantine/core";
 import {Navigate} from "react-router";
 import Cookies from "universal-cookie";
+import { notifications } from '@mantine/notifications';
 
 const MainMap = () => {
-    const [position, setPosition] = useState({lat: 54.71974, long: 55.931184})
     const [dangerPosCircle, setDangerPosCircle] = useState(undefined)
 
     const [radiusText, setRadiusText] = useState(100)
     const [isAddCircle, setIsAddCircle] = useState(false)
 
-    const [isLoading, setIsLoading] = useState(false)
-
     const cookies = new Cookies()
+    const markRef = useRef(undefined)
+    const circleRef = useRef(undefined)
 
     const getActualPosition = async () => {
         let positionDevice = await axios.get(AuthRoutes.URL +
-            `api/plugins/telemetry/DEVICE/${cookies.get("devId")}/values/timeseries?keys=latitude,longitude&startTs=1685951580000&endTs=1686414756000&limit=1`,
+            `api/plugins/telemetry/DEVICE/${cookies.get("devId")}/values/timeseries?keys=latitude,longitude&startTs=1685951580000&endTs=${new Date().getTime()}&limit=1`,
             {
                 "headers": {
                     "Content-Type": "application/json",
@@ -29,39 +29,65 @@ const MainMap = () => {
             }
         ).then(r => r.data)
 
-        setPosition({"lat": positionDevice.latitude[0].value, "long": positionDevice.longitude[0].value})
+        let posLat = positionDevice.latitude[0].value
+        let posLong = positionDevice.longitude[0].value
 
-        return positionDevice
+        if (markRef.current){
+            markRef.current?.geometry?.setCoordinates([posLat, posLong])
+        }
+
+        if (circleRef.current) {
+            let circle = circleRef.current?.geometry
+            let coords = geoDistance(posLat, posLong, ...circle?.getCoordinates())
+            let radius = circle.getRadius()
+
+            if ((radius - coords) <= 0) {
+                notifications.show({
+                    withCloseButton: true,
+                    autoClose: 5000,
+                    title: "Внимание!",
+                    message: 'Пользователь покинул разрешенную зону',
+                    loading: false,
+                    color: 'red',
+                })
+            }
+        }
+
+        return [posLat, posLong]
     }
 
-    useLayoutEffect(() => {
-        setIsLoading(true)
-        console.log(cookies.get("devToken"), cookies.get("devId"))
-        if (cookies.get("devToken") && cookies.get("devId") && cookies.get("isLogin")) {
+    function geoDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3, pi = Math.PI;
+        const { sin, cos, atan2 } = Math;
+        
+        const fi1 = lat1 * pi / 180, lamda1 = lon1 * pi / 180;
+        const fi2 = lat2 * pi / 180, lamda2 = lon2 * pi / 180;
+        const deltaFi = fi2 - fi1, deltaLamda = lamda2 - lamda1;
 
+        const a = sin(deltaFi/2)**2 + cos(fi1) * cos(fi2) * sin(deltaLamda/2)**2;
+        const c = 2 * atan2(a**.5, (1-a)**.5);
+        const d = R * c;
+
+        return d;
+    }
+
+    useEffect(() => {
+        if (cookies.get("devToken") && cookies.get("devId") && cookies.get("isLogin")) {
             // getActualPosition().then(r => console.log(r))
-            // setInterval(() => {
-            //     getActualPosition().then(r => console.log(r))
-            // }, 20000)
+            setInterval(() => {
+                 getActualPosition().then(r => console.log(r))
+            }, 7000)
         }
-        setIsLoading(false)
     }, []);
 
-    if (isLoading) {
-        return (
-            <div className="App">
-                <Loader color="indigo" size="xl" variant="bars" />
-            </div>
-        )
-    }
 
-    if (cookies.get("isLogin") && !isLoading) {
+    if (cookies.get("isLogin")) {
         return (
             <div className="App">
                 <YMaps>
                     <Map
                         defaultState={{
-                            center: [position.lat, position.long],
+                            center: [54.71974, 55.931184],
                             zoom: 15,
                             controls: ["zoomControl", "fullscreenControl"],
                         }}
@@ -70,11 +96,15 @@ const MainMap = () => {
                         height={'100vh'}
                         onClick={(e) => isAddCircle && setDangerPosCircle(e.get('coords'))}
                     >
-                        <Placemark defaultGeometry={[54.71974, 55.931184]} />
+                        <Placemark
+                            instanceRef={markRef}
+                            defaultGeometry={[54.71974, 55.931184]}
+                        />
                         {
                             isAddCircle &&
                             <Circle
                                 geometry={[dangerPosCircle, Number(radiusText)]}
+                                instanceRef={circleRef}
                                 options={{
                                     draggable: false,
                                     fillColor: "#DB709300",
@@ -82,14 +112,13 @@ const MainMap = () => {
                                     strokeOpacity: 0.8,
                                     strokeWidth: 5,
                                 }}
-                                onChange={(e) => isAddCircle && e.get('coords')}
                             />
                         }
                     </Map>
                 </YMaps>
                 <Flex
                     mih={50}
-                    bg="rgba(0, 0, 0, .1)"
+                    bg="#B4AED660"
                     justify="space-between"
                     align="center"
                     direction="column"
@@ -120,7 +149,7 @@ const MainMap = () => {
                         </Button>
                     </Container>
                     <Container>
-                        <Text fz="xs">Created by C. Osipov</Text>
+                        <Text fz="xs">Создал С.Осипов</Text>
                     </Container>
                 </Flex>
             </div>

@@ -27,33 +27,43 @@ const MainMap = () => {
                     "X-Authorization": `Bearer ${cookies.get("devToken")}`
                 }
             }
-        ).then(r => r.data)
+        ).then(r => r.data).catch(err => "Err load data")
 
-        let posLat = positionDevice.latitude[0].value
-        let posLong = positionDevice.longitude[0].value
+        let posLat = positionDevice?.latitude?.at(0)?.value
+        let posLong = positionDevice?.longitude?.at(0)?.value
 
-        if (markRef.current){
-            markRef.current?.geometry?.setCoordinates([posLat, posLong])
-        }
-
-        if (circleRef.current) {
-            let circle = circleRef.current?.geometry
-            let coords = geoDistance(posLat, posLong, ...circle?.getCoordinates())
-            let radius = circle.getRadius()
-
-            if ((radius - coords) <= 0) {
-                notifications.show({
-                    withCloseButton: true,
-                    autoClose: 5000,
-                    title: "Внимание!",
-                    message: 'Пользователь покинул разрешенную зону',
-                    loading: false,
-                    color: 'red',
-                })
+        if (posLong && posLat) {
+            if (markRef.current){
+                markRef.current?.geometry?.setCoordinates([posLat, posLong])
             }
-        }
 
-        return [posLat, posLong]
+            if (circleRef.current) {
+                let circle = circleRef.current?.geometry
+                let coords = geoDistance(posLat, posLong, ...circle?.getCoordinates())
+                let radius = circle.getRadius()
+
+                if ((radius - coords) <= 0) {
+                    notifications.show({
+                        withCloseButton: true,
+                        autoClose: 5000,
+                        title: "Внимание!",
+                        message: 'Пользователь покинул разрешенную зону',
+                        loading: false,
+                        color: 'red',
+                    })
+                }
+            }
+            return [posLat, posLong]
+        } else {
+            notifications.show({
+                withCloseButton: true,
+                autoClose: 5000,
+                title: "Ошибка!",
+                message: 'Невозможно получить данные',
+                loading: false,
+                color: 'red',
+            })
+        }
     }
 
     function geoDistance(lat1, lon1, lat2, lon2) {
@@ -73,10 +83,10 @@ const MainMap = () => {
 
     useEffect(() => {
         if (cookies.get("devToken") && cookies.get("devId") && cookies.get("isLogin")) {
-            // getActualPosition().then(r => console.log(r))
+            getActualPosition().then(r => console.log(r))
             setInterval(() => {
                  getActualPosition().then(r => console.log(r))
-            }, 7000)
+            }, 60000)
         }
     }, []);
 

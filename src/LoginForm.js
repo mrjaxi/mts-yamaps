@@ -30,13 +30,13 @@ const LoginForm = () => {
             {
                 "headers": {
                     "Content-Type": "application/json",
-                    "X-Authorization": `Bearer ${loadState('devToken')}`
+                    "X-Authorization": `Bearer ${tokenDevice}`
                 }
             }
         ).then(r => r.data.data[0].id.id).catch(err => "err")
 
         setIsLoading(false)
-        if (!error && tokenDevice) {
+        if (!error && tokenDevice && idDevice) {
             cookies.set("devToken", tokenDevice)
             cookies.set("isLogin", true)
             cookies.set("devId", idDevice)
@@ -73,7 +73,7 @@ const LoginForm = () => {
                         <Center>
                             <Image maw={50} mx="auto" radius="xl" src={ImageLogo} alt="Random image" />
                             <Space w="md"/>
-                            <Title>МТС ГеоПозиция</Title>
+                            <Title>УУНиТ ГеоПозиция</Title>
                         </Center>
                         <Container>
                             <Text fz="xs">Создал С.Осипов</Text>

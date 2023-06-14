@@ -14,6 +14,7 @@ const MainMap = () => {
 
     const [radiusText, setRadiusText] = useState(0)
     const [isAddCircle, setIsAddCircle] = useState(false)
+    const [isDanger, setIsDanger] = useState(false)
 
     const cookies = new Cookies()
     const markRef = useRef(undefined)
@@ -22,7 +23,7 @@ const MainMap = () => {
 
     const getActualPosition = async () => {
         let positionDevice = await axios.get(AuthRoutes.URL +
-            `api/plugins/telemetry/DEVICE/${cookies.get("devId") || loadState('devId')}/values/timeseries?keys=latitude,longitude&startTs=1685951580000&endTs=${new Date().getTime()}&limit=1`,
+            `api/plugins/telemetry/DEVICE/${cookies.get("devId") || loadState('devId')}/values/timeseries?keys=latitude,longitude,aZ,aX&startTs=1685951580000&endTs=${new Date().getTime()}&limit=1`,
             {
                 "headers": {
                     "Content-Type": "application/json",
@@ -33,6 +34,16 @@ const MainMap = () => {
 
         let posLat = positionDevice?.latitude?.at(0)?.value
         let posLong = positionDevice?.longitude?.at(0)?.value
+        let gainZ = positionDevice?.aZ?.at(0).value
+        let gainX = positionDevice?.aX?.at(0).value
+
+        console.log("z", gainZ, "  x", gainX)
+
+        if (gainZ > 500 || Math.abs(gainX) > 100) {
+            if (loadState('telegramID')) {
+                await axios.get(AuthRoutes.TELEGRAM_SEND_MESSAGE + `?chat_id=${loadState('telegramID')}&text=Пользователь попал в критическую ситуацию. Данные с устройства {x:${gainX}, z: ${gainZ}`).then(r => r.data).catch(err => console.log("err"))
+            }
+        }
 
         if (posLong && posLat) {
             if (markRef.current){
@@ -81,7 +92,7 @@ const MainMap = () => {
             removeState('devId')
             removeState('devToken')
 
-            window.location.reload();
+            // window.location.reload();
         }
     }
 
@@ -168,6 +179,25 @@ const MainMap = () => {
                             onClick={() => radiusText && setIsAddCircle(!isAddCircle)}
                         >
                             {isAddCircle ? "Удалить" : "Добавить"}
+                        </Button>
+                        <Space h="xl" />
+                        <NumberInput
+                            variant="filled"
+                            label="Усиление"
+                            description="Параметр позволяет задать силу удара, при которой придет уведомление об опасности"
+                            placeholder="Усиление"
+                            radius="md"
+                            size="md"
+                            onChange={() => console.log()}
+                        />
+                        <Space h="md"/>
+                        <Button
+                            color={isDanger ? "red" : "indigo"}
+                            radius="md"
+                            size="md"
+                            onClick={() => radiusText && setIsDanger(!isDanger)}
+                        >
+                            {isDanger ? "Удалить" : "Отслеживать"}
                         </Button>
                         <Space h="xl" />
                         <TextInput

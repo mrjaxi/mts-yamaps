@@ -3,28 +3,30 @@ import './styles/App.css';
 import axios from "axios";
 import AuthRoutes from "./AuthRoutes";
 import {Circle, Map, Placemark, YMaps} from "@pbe/react-yandex-maps";
-import {Button, Container, Flex, NumberInput, Space, Text} from "@mantine/core";
-import {Navigate} from "react-router";
+import {Button, Container, Flex, NumberInput, Space, Text, TextInput} from "@mantine/core";
+import {Navigate, useNavigate} from "react-router";
 import Cookies from "universal-cookie";
 import { notifications } from '@mantine/notifications';
+import {geoDistance, loadState, removeState, saveState} from "./utils/utils";
 
 const MainMap = () => {
     const [dangerPosCircle, setDangerPosCircle] = useState(undefined)
 
-    const [radiusText, setRadiusText] = useState(100)
+    const [radiusText, setRadiusText] = useState(0)
     const [isAddCircle, setIsAddCircle] = useState(false)
 
     const cookies = new Cookies()
     const markRef = useRef(undefined)
     const circleRef = useRef(undefined)
+    const navigate = useNavigate()
 
     const getActualPosition = async () => {
         let positionDevice = await axios.get(AuthRoutes.URL +
-            `api/plugins/telemetry/DEVICE/${cookies.get("devId")}/values/timeseries?keys=latitude,longitude&startTs=1685951580000&endTs=${new Date().getTime()}&limit=1`,
+            `api/plugins/telemetry/DEVICE/${cookies.get("devId") || loadState('devId')}/values/timeseries?keys=latitude,longitude&startTs=1685951580000&endTs=${new Date().getTime()}&limit=1`,
             {
                 "headers": {
                     "Content-Type": "application/json",
-                    "X-Authorization": `Bearer ${cookies.get("devToken")}`
+                    "X-Authorization": `Bearer ${cookies.get("devToken") || loadState('devToken')}`
                 }
             }
         ).then(r => r.data).catch(err => "Err load data")
@@ -51,6 +53,18 @@ const MainMap = () => {
                         loading: false,
                         color: 'red',
                     })
+                    if (loadState('telegramID')) {
+                        await axios.get(AuthRoutes.TELEGRAM_SEND_MESSAGE + `?chat_id=${loadState('telegramID')}&text=Пользователь покинул разрешенную зону. Его текущая позиция (lat: ${posLat}, long: ${posLong})`).then(r => r.data).catch(err => {
+                            notifications.show({
+                                withCloseButton: true,
+                                autoClose: 5000,
+                                title: "Ошибка!",
+                                message: 'Отправка сообщения не удалась',
+                                loading: false,
+                                color: 'red',
+                            })
+                        })
+                    }
                 }
             }
             return [posLat, posLong]
@@ -63,35 +77,34 @@ const MainMap = () => {
                 loading: false,
                 color: 'red',
             })
+            removeState('isLogin')
+            removeState('devId')
+            removeState('devToken')
+
+            window.location.reload();
         }
     }
 
-    function geoDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3, pi = Math.PI;
-        const { sin, cos, atan2 } = Math;
-        
-        const fi1 = lat1 * pi / 180, lamda1 = lon1 * pi / 180;
-        const fi2 = lat2 * pi / 180, lamda2 = lon2 * pi / 180;
-        const deltaFi = fi2 - fi1, deltaLamda = lamda2 - lamda1;
-
-        const a = sin(deltaFi/2)**2 + cos(fi1) * cos(fi2) * sin(deltaLamda/2)**2;
-        const c = 2 * atan2(a**.5, (1-a)**.5);
-        const d = R * c;
-
-        return d;
+    const setTelegramId = (id) => {
+        if (id) {
+            saveState('telegramID', id)
+        } else {
+            removeState('telegramID')
+        }
     }
 
     useEffect(() => {
-        if (cookies.get("devToken") && cookies.get("devId") && cookies.get("isLogin")) {
+        if ((cookies.get("devToken") && cookies.get("devId") && cookies.get("isLogin")) ||
+            (loadState('devToken') && loadState('devId') && loadState('isLogin'))) {
             getActualPosition().then(r => console.log(r))
             setInterval(() => {
-                 getActualPosition().then(r => console.log(r))
-            }, 60000)
+                getActualPosition().then(r => console.log(r))
+            }, 15000)
         }
     }, []);
 
 
-    if (cookies.get("isLogin")) {
+    if (cookies.get("isLogin") || loadState('isLogin')) {
         return (
             <div className="App">
                 <YMaps>
@@ -139,7 +152,6 @@ const MainMap = () => {
                     <Container />
                     <Container>
                         <NumberInput
-                            defaultValue={100}
                             variant="filled"
                             label="Граница"
                             description="Позволяет задать зону, за пределы которой запрещено выходить"
@@ -157,6 +169,17 @@ const MainMap = () => {
                         >
                             {isAddCircle ? "Удалить" : "Добавить"}
                         </Button>
+                        <Space h="xl" />
+                        <TextInput
+                            defaultValue={loadState('telegramID') || ""}
+                            variant="filled"
+                            label="Телеграм ID"
+                            description="Сообщения о событиях будут автоматически отправляться в личные сообщения"
+                            placeholder="ID профиля"
+                            radius="md"
+                            size="md"
+                            onChange={(text) => setTelegramId(text.target.value)}
+                        />
                     </Container>
                     <Container>
                         <Text fz="xs">Создал С.Осипов</Text>

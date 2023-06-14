@@ -6,6 +6,7 @@ import AuthRoutes from "./AuthRoutes";
 import {Navigate, useNavigate} from "react-router";
 import Cookies from "universal-cookie";
 import ImageLogo from './img/img-icon.png'
+import {loadState, saveState} from "./utils/utils";
 
 const LoginForm = () => {
     const [email, setEmail] = useState("")
@@ -29,24 +30,27 @@ const LoginForm = () => {
             {
                 "headers": {
                     "Content-Type": "application/json",
-                    "X-Authorization": `Bearer ${tokenDevice}`
+                    "X-Authorization": `Bearer ${loadState('devToken')}`
                 }
             }
-        ).then(r => r.data.data[0].id.id).catch(err => setError(true))
-        console.log(idDevice)
+        ).then(r => r.data.data[0].id.id).catch(err => "err")
 
         setIsLoading(false)
-        if (!error && tokenDevice && idDevice) {
+        if (!error && tokenDevice) {
             cookies.set("devToken", tokenDevice)
-            cookies.set("devId", idDevice)
             cookies.set("isLogin", true)
+            cookies.set("devId", idDevice)
+
+            saveState('devToken', tokenDevice)
+            saveState('isLogin', true)
+            saveState('devId', idDevice)
 
             navigate("/main", { replace: true })
         }
     }
 
 
-    if (cookies.get("devToken") && cookies.get("devId")) {
+    if ((cookies.get("devToken") && cookies.get("devId")) || (loadState('devToken') && loadState('devId'))) {
         return <Navigate to="/main" replace />
     } else {
         return (

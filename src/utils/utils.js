@@ -1,3 +1,7 @@
+import axios from "axios";
+import AuthRoutes from "../AuthRoutes";
+import {notifications} from "@mantine/notifications";
+
 export const loadState = (key) => {
 
     try {
@@ -41,4 +45,24 @@ export const geoDistance = (lat1, lon1, lat2, lon2) => {
     const d = R * c;
 
     return d;
+}
+
+export const sendTelegramMessage = async (id, message) => {
+    return await axios.get(
+        AuthRoutes.TELEGRAM_SEND_MESSAGE + `?chat_id=${id}&text=${message}`)
+        .then(r => r.data)
+        .catch(err => {
+            sendNotification("Ошибка!", "Невозможно отправить сообщение в телеграм")
+        })
+}
+
+export const sendNotification = (title, message) => {
+    notifications.show({
+        withCloseButton: true,
+        autoClose: 5000,
+        title: title,
+        message: message,
+        loading: false,
+        color: 'red',
+    })
 }

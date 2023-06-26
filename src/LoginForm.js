@@ -26,32 +26,21 @@ const LoginForm = () => {
             }
         ).then(r => r.data.token).catch(err => setError(true))
 
-        let idDevice = await axios.get(AuthRoutes.URL + AuthRoutes.GET_CUSTOMER_DEVICES + "?pageSize=10&page=0",
-            {
-                "headers": {
-                    "Content-Type": "application/json",
-                    "X-Authorization": `Bearer ${tokenDevice}`
-                }
-            }
-        ).then(r => r.data.data[0].id.id).catch(err => "err")
-
         setIsLoading(false)
-        if (!error && tokenDevice && idDevice) {
+        if (!error && tokenDevice) {
             cookies.set("devToken", tokenDevice)
             cookies.set("isLogin", true)
-            cookies.set("devId", idDevice)
 
             saveState('devToken', tokenDevice)
             saveState('isLogin', true)
-            saveState('devId', idDevice)
 
-            navigate("/main", { replace: true })
+            navigate("/devices", { replace: true })
         }
     }
 
 
-    if ((cookies.get("devToken") && cookies.get("devId")) || (loadState('devToken') && loadState('devId'))) {
-        return <Navigate to="/main" replace />
+    if (cookies.get("devToken") || loadState('devToken')) {
+        return <Navigate to="/devices" replace />
     } else {
         return (
             <Flex

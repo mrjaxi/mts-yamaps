@@ -4,19 +4,16 @@ import {
     Accordion,
     Badge,
     Button,
-    Center,
     Container, Divider,
     Flex,
-    Group,
     List,
     Loader,
     Space,
-    Text,
     Title
 } from "@mantine/core";
 import axios from "axios";
 import AuthRoutes from "./AuthRoutes";
-import {loadState, saveState} from "./utils/utils";
+import {loadState, removeState, saveState} from "./utils/utils";
 import Cookies from "universal-cookie";
 import {useNavigate} from "react-router";
 
@@ -37,20 +34,33 @@ const DevicesPage = () => {
                     "X-Authorization": `Bearer ${loadState('devToken')}`
                 }
             }
-        ).then(r => r.data.data).catch(err => "err") //.data[0].id.id
-        setDevices(idDevice)
-        setLoading(false)
+        ).then(r => r.data.data).catch(err => false) //.data[0].id.id
+
+        if (idDevice){
+            setDevices(idDevice)
+            setLoading(false)
+        } else {
+            removeState('devToken')
+            removeState('isLogin')
+            navigate("/login", {replace: true})
+        }
     }
 
     const chooseDevice = (idDevice) => {
         cookies.set("devId", idDevice)
-        cookies.set("devName",)
         saveState('devId', idDevice)
+
         navigate("/main", {replace: true})
     }
 
     useEffect(() => {
-        getInfoByDevice()
+        if ((cookies.get("devToken") && cookies.get("isLogin")) || (loadState('devToken') && loadState('isLogin'))) {
+            getInfoByDevice()
+        } else {
+            removeState('devToken')
+            removeState('isLogin')
+            navigate("/login", {replace: true})
+        }
     }, []);
 
 

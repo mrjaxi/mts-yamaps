@@ -6,8 +6,7 @@ import {Circle, Map, Placemark, YMaps} from "@pbe/react-yandex-maps";
 import {Button, Container, Flex, NumberInput, Space, Text, TextInput} from "@mantine/core";
 import {Navigate, useNavigate} from "react-router";
 import Cookies from "universal-cookie";
-import { notifications } from '@mantine/notifications';
-import {geoDistance, loadState, removeState, saveState} from "./utils/utils";
+import {geoDistance, loadState, removeState, saveState, sendNotification, sendTelegramMessage} from "./utils/utils";
 
 const MainMap = () => {
     const [dangerPosCircle, setDangerPosCircle] = useState(undefined)
@@ -16,9 +15,11 @@ const MainMap = () => {
     const [isAddCircle, setIsAddCircle] = useState(false)
     const [isDanger, setIsDanger] = useState(false)
 
-    const cookies = new Cookies()
     const markRef = useRef(undefined)
     const circleRef = useRef(undefined)
+    const inputRef = useRef(undefined)
+
+    const cookies = new Cookies()
     const navigate = useNavigate()
 
     const getActualPosition = async () => {
@@ -31,7 +32,7 @@ const MainMap = () => {
                 }
             }
         ).then(r => r.data).catch(err => "Err load data")
-
+        console.log(positionDevice)
         let posLat = positionDevice?.latitude?.at(0)?.value
         let posLong = positionDevice?.longitude?.at(0)?.value
         let gainZ = positionDevice?.aZ?.at(0).value
@@ -39,9 +40,9 @@ const MainMap = () => {
 
         console.log("z", gainZ, "  x", gainX)
 
-        if (gainZ > 500 || Math.abs(gainX) > 100) {
+        if (gainZ > 500 || Math.abs(gainX) > 50) {
             if (loadState('telegramID')) {
-                await axios.get(AuthRoutes.TELEGRAM_SEND_MESSAGE + `?chat_id=${loadState('telegramID')}&text=Пользователь попал в критическую ситуацию. Данные с устройства {x:${gainX}, z: ${gainZ}`).then(r => r.data).catch(err => console.log("err"))
+                sendTelegramMessage(loadState('telegramID'), "Пользователь попал в критическую ситуацию.")
             }
         }
 
@@ -56,43 +57,19 @@ const MainMap = () => {
                 let radius = circle.getRadius()
 
                 if ((radius - coords) <= 0) {
-                    notifications.show({
-                        withCloseButton: true,
-                        autoClose: 5000,
-                        title: "Внимание!",
-                        message: 'Пользователь покинул разрешенную зону',
-                        loading: false,
-                        color: 'red',
-                    })
                     if (loadState('telegramID')) {
-                        await axios.get(AuthRoutes.TELEGRAM_SEND_MESSAGE + `?chat_id=${loadState('telegramID')}&text=Пользователь покинул разрешенную зону. Его текущая позиция (lat: ${posLat}, long: ${posLong})`).then(r => r.data).catch(err => {
-                            notifications.show({
-                                withCloseButton: true,
-                                autoClose: 5000,
-                                title: "Ошибка!",
-                                message: 'Отправка сообщения не удалась',
-                                loading: false,
-                                color: 'red',
-                            })
-                        })
+                        sendTelegramMessage(loadState('telegramID'), `Пользователь покинул разрешенную зону. Его текущая позиция (lat: ${posLat}, long: ${posLong})`)
                     }
                 }
             }
             return [posLat, posLong]
         } else {
-            notifications.show({
-                withCloseButton: true,
-                autoClose: 5000,
-                title: "Ошибка!",
-                message: 'Невозможно получить данные',
-                loading: false,
-                color: 'red',
-            })
+            sendNotification("Ошибка!", "Невозможно получить данные")
             removeState('isLogin')
             removeState('devId')
             removeState('devToken')
 
-            // window.location.reload();
+            navigate("/login", {replace: true});
         }
     }
 
@@ -110,7 +87,7 @@ const MainMap = () => {
             getActualPosition().then(r => console.log(r))
             setInterval(() => {
                 getActualPosition().then(r => console.log(r))
-            }, 15000)
+            }, 5000)
         }
     }, []);
 
@@ -160,7 +137,8 @@ const MainMap = () => {
                     h="100vh"
                     w="30vw"
                 >
-                    <Container />
+                    <Container>
+                    </Container>
                     <Container>
                         <NumberInput
                             variant="filled"
@@ -182,13 +160,14 @@ const MainMap = () => {
                         </Button>
                         <Space h="xl" />
                         <NumberInput
+                            ref={inputRef}
                             variant="filled"
                             label="Усиление"
                             description="Параметр позволяет задать силу удара, при которой придет уведомление об опасности"
                             placeholder="Усиление"
                             radius="md"
                             size="md"
-                            onChange={() => console.log()}
+                            onChange={() => console.log(inputRef.current.defaultValue)}
                         />
                         <Space h="md"/>
                         <Button

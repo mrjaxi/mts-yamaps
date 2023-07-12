@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import './styles/App.css';
+import '../styles/App.css';
 import {
     Accordion,
     Badge,
@@ -12,8 +12,8 @@ import {
     Title
 } from "@mantine/core";
 import axios from "axios";
-import AuthRoutes from "./AuthRoutes";
-import {loadState, removeState, saveState} from "./utils/utils";
+import AuthRoutes from "../api/AuthRoutes";
+import {loadState, removeState, saveState} from "../utils/notificationSender";
 import Cookies from "universal-cookie";
 import {useNavigate} from "react-router";
 

@@ -1,13 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles/index.css';
-import App from './App';
+import App from './pages/App';
 import {MantineProvider} from '@mantine/core';
 import {HashRouter, Route, Routes} from "react-router-dom";
-import LoginForm from "./LoginForm";
-import MainMap from "./MainMap";
+import LoginPage from "./pages/LoginPage";
+import MainMap from "./pages/MainMap";
 import {Notifications} from "@mantine/notifications";
-import DevicesPage from "./DevicesPage";
+import DevicesPage from "./pages/DevicesPage";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -16,7 +16,7 @@ root.render(
         <HashRouter>
             <Routes>
                 <Route path="/" element={<App />} />
-                <Route path="/login" element={<LoginForm />} />
+                <Route path="/login" element={<LoginPage />} />
                 <Route path="/main" element={<MainMap />} />
                 <Route path="/devices" element={<DevicesPage />} />
             </Routes>

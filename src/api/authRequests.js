@@ -1,8 +1,8 @@
 import axios from "axios";
-import AuthRoutes from "./AuthRoutes";
+import ApiRoutes from "./apiRoutes";
 
 export const loginRequest = async (email, password) => {
-    return await axios.post(AuthRoutes.URL + AuthRoutes.AUTH_PATH,
+    return await axios.post(ApiRoutes.URL + ApiRoutes.AUTH_PATH,
         {
             username: email,
             password: password

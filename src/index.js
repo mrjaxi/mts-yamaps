@@ -5,7 +5,7 @@ import App from './pages/App';
 import {MantineProvider} from '@mantine/core';
 import {HashRouter, Route, Routes} from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
-import MainMap from "./pages/MainMap";
+import MapPage from "./pages/MapPage";
 import {Notifications} from "@mantine/notifications";
 import DevicesPage from "./pages/DevicesPage";
 
@@ -17,7 +17,7 @@ root.render(
             <Routes>
                 <Route path="/" element={<App />} />
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/main" element={<MainMap />} />
+                <Route path="/main" element={<MapPage />} />
                 <Route path="/devices" element={<DevicesPage />} />
             </Routes>
         </HashRouter>

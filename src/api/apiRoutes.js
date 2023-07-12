@@ -1,4 +1,4 @@
-const AuthRoutes = {
+const ApiRoutes = {
     URL: "https://iotspace.mts.ru:443/",
     AUTH_PATH: "api/auth/login",
     GET_TENANT_DEVICES: "api/tenant/devices",
@@ -8,4 +8,4 @@ const AuthRoutes = {
     TELEGRAM_SEND_MESSAGE: "https://api.telegram.org/bot6027156402:AAHwO8HiBmqltBdoz-n98ZBGbiFK-NPCKlI/sendMessage"
 }
 
-export default AuthRoutes;
+export default ApiRoutes;

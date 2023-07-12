@@ -11,11 +11,9 @@ import {
     Space,
     Title
 } from "@mantine/core";
-import axios from "axios";
-import AuthRoutes from "../api/AuthRoutes";
-import {loadState, removeState, saveState} from "../utils/notificationSender";
-import Cookies from "universal-cookie";
-import {useNavigate} from "react-router";
+import {Navigate, useNavigate} from "react-router";
+import {loadState, removeState, saveState} from "../utils/localStorage";
+import {deviceIdRequest} from "../api/deviceRequests";
 
 const DevicesPage = () => {
 
@@ -23,48 +21,34 @@ const DevicesPage = () => {
     const [loading, setLoading] = useState(false)
 
     const navigate = useNavigate()
-    const cookies = new Cookies()
 
     const getInfoByDevice = async () => {
         setLoading(true)
-        let idDevice = await axios.get(AuthRoutes.URL + AuthRoutes.GET_CUSTOMER_DEVICES + "?pageSize=10&page=0",
-            {
-                "headers": {
-                    "Content-Type": "application/json",
-                    "X-Authorization": `Bearer ${loadState('devToken')}`
-                }
-            }
-        ).then(r => r.data.data).catch(err => false) //.data[0].id.id
+        let idDevice = await deviceIdRequest()
 
+        setLoading(false)
         if (idDevice){
             setDevices(idDevice)
-            setLoading(false)
         } else {
             removeState('devToken')
-            removeState('isLogin')
             navigate("/login", {replace: true})
         }
     }
 
     const chooseDevice = (idDevice) => {
-        cookies.set("devId", idDevice)
         saveState('devId', idDevice)
 
         navigate("/main", {replace: true})
     }
 
     useEffect(() => {
-        if ((cookies.get("devToken") && cookies.get("isLogin")) || (loadState('devToken') && loadState('isLogin'))) {
-            getInfoByDevice()
-        } else {
-            removeState('devToken')
-            removeState('isLogin')
-            navigate("/login", {replace: true})
-        }
+        getInfoByDevice()
     }, []);
 
 
-    if (loading) {
+    if (!loadState('devToken')) {
+        return <Navigate to={'/login'} replace />
+    } else if (loading) {
         return (
             <Flex
                 mih={100}

@@ -2,14 +2,14 @@ import React, {useEffect, useRef, useState} from 'react';
 import '../styles/App.css';
 import {Circle, Map, Placemark, YMaps} from "@pbe/react-yandex-maps";
 import {Button, Container, Flex, NumberInput, Space, Text, TextInput} from "@mantine/core";
-import {Navigate, useNavigate} from "react-router";
-import {telemetryRequest} from "../api/telemetryRequest";
+import {useNavigate} from "react-router";
 import {loadState, removeState, saveState} from "../utils/localStorage";
-import {telegramRequest} from "../api/telegramRequest";
+import {telegramApiRequests} from "../api/telegramApiRequests";
 import {geoDistance} from "../utils/distanceCalc";
+import {telemetryRequest} from "../api/deviceRequests";
 import {sendNotification} from "../utils/notificationSender";
 
-const MainMap = () => {
+const MapPage = () => {
     const [dangerPosCircle, setDangerPosCircle] = useState(undefined)
 
     const [radiusText, setRadiusText] = useState(0)
@@ -25,14 +25,16 @@ const MainMap = () => {
     const getActualPosition = async () => {
         if (loadState('devToken') && loadState('devId')) {
             let deviceData = await telemetryRequest(['latitude', 'longitude', 'aZ', 'aX'])
-            // if (deviceData) {
-            //     sendNotification("Ошибка!", "Невозможно получить данные")
-            //     removeState('isLogin')
-            //     removeState('devId')
-            //     removeState('devToken')
-            //
-            //     navigate("/login", {replace: true});
-            // }
+
+            if (!deviceData) {
+                sendNotification("Ошибка!", "Невозможно получить данные")
+                removeState('isLogin')
+                removeState('devId')
+                removeState('devToken')
+
+                navigate("/login", {replace: true});
+            }
+
             console.log(deviceData)
             let posLat = deviceData?.latitude?.at(0)?.value
             let posLong = deviceData?.longitude?.at(0)?.value
@@ -43,7 +45,7 @@ const MainMap = () => {
 
             if (gainZ > 500 || Math.abs(gainX) > 50) {
                 if (loadState('telegramID')) {
-                    await telegramRequest(loadState('telegramID'), "Пользователь попал в критическую ситуацию.")
+                    await telegramApiRequests(loadState('telegramID'), "Пользователь попал в критическую ситуацию.")
                 }
             }
 
@@ -59,12 +61,14 @@ const MainMap = () => {
 
                     if ((radius - coords) <= 0) {
                         if (loadState('telegramID')) {
-                            await telegramRequest(loadState('telegramID'), `Пользователь покинул разрешенную зону. Его текущая позиция (lat: ${posLat}, long: ${posLong})`)
+                            await telegramApiRequests(loadState('telegramID'), `Пользователь покинул разрешенную зону. Его текущая позиция (lat: ${posLat}, long: ${posLong})`)
                         }
                     }
                 }
                 return [posLat, posLong]
             }
+        } else {
+            navigate('/login', {replace: false})
         }
     }
 
@@ -189,4 +193,4 @@ const MainMap = () => {
     );
 };
 
-export default MainMap;
+export default MapPage;
